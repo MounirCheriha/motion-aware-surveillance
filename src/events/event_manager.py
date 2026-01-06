@@ -73,3 +73,14 @@ class EventManager:
         self.event_active = False
         self.event_start_time = None
         self.last_motion_time = None
+
+    def get_event_metadata(self, end_time: float):
+        duration = end_time - self.event_start_time
+
+        return {
+            "event_id": self.event_id,
+            "start_time": round(self.event_start_time, 2),
+            "end_time": round(end_time, 2),
+            "duration": round(duration, 2),
+            "labels": sorted(self.event_labels),
+        }
