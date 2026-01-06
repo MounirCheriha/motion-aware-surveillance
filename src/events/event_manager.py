@@ -12,6 +12,7 @@ class EventManager:
         self.last_motion_time = None
 
         self.event_id = 0
+        self.event_labels = set()
 
     def update(self, motion_detected: bool, timestamp: float):
         """
@@ -40,20 +41,28 @@ class EventManager:
 
         return None
 
+    
+    def add_detections(self, detections):
+        for d in detections:
+            self.event_labels.add(d.label)
+
     def _start_event(self, timestamp: float):
         self.event_active = True
         self.event_start_time = timestamp
         self.event_id += 1
+        self.event_labels.clear()
 
         print(f"[EVENT {self.event_id}] START at {timestamp:.2f}s")
 
     def _end_event(self, timestamp: float):
         duration = timestamp - self.event_start_time
 
+        label_summary = ", ".join(sorted(self.event_labels)) or "unknown"
+
         if duration >= self.min_event_duration:
             print(
                 f"[EVENT {self.event_id}] END at {timestamp:.2f}s "
-                f"(duration={duration:.2f}s)"
+                f"(duration={duration:.2f}s, labels={label_summary})"
             )
         else:
             print(

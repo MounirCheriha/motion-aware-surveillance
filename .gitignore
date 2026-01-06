@@ -6,6 +6,9 @@ __pycache__/
 # VS Code
 .vscode/
 
+# YOLO model
+yolov8n.pt
+
 # Data & outputs
 data/
 outputs/
