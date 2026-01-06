@@ -2,14 +2,9 @@ import cv2
 import os
 
 from video.reader import VideoReader
+from video.writer import EventVideoWriter
 from motion.motion_detector import MotionDetector
 from events.event_manager import EventManager
-
-DEBUG_VISUALIZE = False
-
-def draw_motion_boxes(frame, boxes):
-    for (x, y, w, h) in boxes:
-        cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
 
 
 def main():
@@ -17,21 +12,25 @@ def main():
     detector = MotionDetector(min_area=800)
     event_manager = EventManager(inactivity_timeout=2.0)
 
-    frame_idx = 0
+    writer = EventVideoWriter(
+        output_dir="outputs/events",
+        fps=reader.fps
+    )
 
     for frame, ts in reader.read():
         motion_result = detector.update(frame)
-        event_manager.update(motion_result.detected, ts)
+        signal = event_manager.update(motion_result.detected, ts)
 
-        if motion_result.detected:
-            draw_motion_boxes(frame, motion_result.boxes)
+        if signal == "start":
+            writer.start(event_manager.event_id, frame.shape)
 
-            # Save occasional debug frames
-            if frame_idx % 30 == 0 and DEBUG_VISUALIZE:
-                out_path = f"outputs/debug_frames/frame_{frame_idx:06d}.jpg"
-                cv2.imwrite(out_path, frame)
+        if event_manager.event_active:
+            writer.write(frame)
 
-        frame_idx += 1
+        if signal == "end":
+            path = writer.stop()
+            if path:
+                print(f"Saved event video: {path}")
 
     reader.release()
 
