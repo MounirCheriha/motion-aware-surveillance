@@ -10,11 +10,11 @@ from detection.object_detector import ObjectDetector
 
 
 ENABLE_LABELING = True 
-YOLO_FRAME_STRIDE = 15  # run YOLO every N frames
+YOLO_FRAME_STRIDE = 5  # run YOLO every N frames
 
 
 def main():
-    reader = VideoReader("data/sample_video.mp4")
+    reader = VideoReader("data/one-by-one-person-detection.mp4")
 
     motion_detector = MotionDetector(min_area=800)
     event_manager = EventManager(inactivity_timeout=2.0)
@@ -46,17 +46,32 @@ def main():
             frame_count = 0
 
         if event_manager.event_active:
-            # Record frame
-            writer.write(frame)
 
             # Run YOLO only during active events
             if ENABLE_LABELING and (frame_count % YOLO_FRAME_STRIDE == 0):
-                labels = object_detector.detect_on_rois(
+                detections = object_detector.detect_on_rois(
                     frame,
                     motion_result.bounding_boxes
                 )
-                event_manager.add_detections(labels)
+                for d in detections:
+                    x1, y1, x2, y2 = d["bbox"]
+                    label = d["label"]
+                    conf = d["confidence"]
 
+                    cv2.rectangle(frame, (x1,y1), (x2,y2), (0,255,0), 2)
+                    cv2.putText(
+                        frame,
+                        f"{label} {conf:.2f}",
+                        (x1, y1 - 5),
+                        cv2.FONT_HERSHEY_SIMPLEX,
+                        0.5,
+                        (0, 255, 0),
+                        1
+                    )
+                event_manager.add_detections([d["label"] for d in detections])
+
+            # Record frame
+            writer.write(frame)
             frame_count += 1
 
         if signal == "end":

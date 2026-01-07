@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 from typing import List, Tuple
 from .motion_result import MotionResult
-
+from .roi_utils import consolidate_boxes
 
 class MotionDetector:
     def __init__(
@@ -60,6 +60,7 @@ class MotionDetector:
             total_area += area
 
         detected = len(boxes) > 0
+        boxes = consolidate_boxes(boxes, expand=25)
 
         return MotionResult(
             motion_detected=detected,

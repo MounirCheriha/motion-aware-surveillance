@@ -37,7 +37,7 @@ class ObjectDetector:
         if not self.enabled or not rois:
             return set()
 
-        labels = set()
+        detections = []
         h, w, _ = frame.shape
 
         for (x, y, bw, bh) in rois:
@@ -57,6 +57,19 @@ class ObjectDetector:
                 for box in r.boxes:
                     cls_id = int(box.cls[0])
                     label = self.model.names[cls_id]
-                    labels.add(label)
+                    conf = float(box.conf[0])
 
-        return labels
+                    bx1, by1, bx2, by2 = map(int, box.xyxy[0])
+
+                    detections.append({
+                    "label": label,
+                    "confidence": conf,
+                    "bbox": (
+                        x1 + bx1,
+                        y1 + by1,
+                        x1 + bx2,
+                        y1 + by2
+                    )
+                })
+
+        return detections
