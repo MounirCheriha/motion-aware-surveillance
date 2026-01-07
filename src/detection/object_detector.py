@@ -1,8 +1,6 @@
-from typing import List
-import numpy as np
-
+import cv2
 from ultralytics import YOLO
-
+from typing import List, Tuple, Dict, Set
 
 class Detection:
     def __init__(self, label: str, confidence: float, bbox):
@@ -15,40 +13,50 @@ class ObjectDetector:
     def __init__(
         self,
         model_name: str = "yolov8n.pt",
-        confidence_threshold: float = 0.5,
-        allowed_classes: List[str] | None = None,
+        conf_threshold: float = 0.4,
+        roi_padding: int = 10,
+        enabled: bool = True
     ):
-        self.model = YOLO(model_name)
-        self.confidence_threshold = confidence_threshold
-        self.allowed_classes = allowed_classes
+        self.enabled = enabled
+        self.conf_threshold = conf_threshold
+        self.roi_padding = roi_padding
 
-        # Map class id → name
-        self.class_names = self.model.names
+        if self.enabled:
+            self.model = YOLO(model_name)
 
-    def detect(self, frame: np.ndarray) -> List[Detection]:
+    def detect_on_rois(
+        self,
+        frame,
+        rois: List[Tuple[int, int, int, int]]
+    ) -> Set[str]:
         """
-        Run YOLO inference on a single frame.
+        Runs YOLO only on motion ROIs.
+        Returns a set of detected class names.
         """
-        results = self.model(frame, verbose=False)
 
-        detections: List[Detection] = []
+        if not self.enabled or not rois:
+            return set()
 
-        for r in results:
-            for box in r.boxes:
-                conf = float(box.conf)
-                cls_id = int(box.cls)
-                label = self.class_names[cls_id]
+        labels = set()
+        h, w, _ = frame.shape
 
-                if conf < self.confidence_threshold:
-                    continue
+        for (x, y, bw, bh) in rois:
+            # Add padding
+            x1 = max(0, x - self.roi_padding)
+            y1 = max(0, y - self.roi_padding)
+            x2 = min(w, x + bw + self.roi_padding)
+            y2 = min(h, y + bh + self.roi_padding)
 
-                if self.allowed_classes and label not in self.allowed_classes:
-                    continue
+            roi = frame[y1:y2, x1:x2]
+            if roi.size == 0:
+                continue
 
-                x1, y1, x2, y2 = map(int, box.xyxy[0])
+            results = self.model(roi, conf=self.conf_threshold, verbose=False)
 
-                detections.append(
-                    Detection(label, conf, (x1, y1, x2, y2))
-                )
+            for r in results:
+                for box in r.boxes:
+                    cls_id = int(box.cls[0])
+                    label = self.model.names[cls_id]
+                    labels.add(label)
 
-        return detections
+        return labels

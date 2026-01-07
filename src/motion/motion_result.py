@@ -4,6 +4,6 @@ from typing import List, Tuple
 
 @dataclass
 class MotionResult:
-    detected: bool
-    boxes: List[Tuple[int, int, int, int]]
-    total_area: float
+    motion_detected: bool
+    contours: List
+    bounding_boxes: List[Tuple[int, int, int, int]]

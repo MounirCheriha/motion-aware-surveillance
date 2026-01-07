@@ -62,7 +62,7 @@ class MotionDetector:
         detected = len(boxes) > 0
 
         return MotionResult(
-            detected=detected,
-            boxes=boxes,
-            total_area=total_area
+            motion_detected=detected,
+            contours=contours,
+            bounding_boxes=boxes
         )

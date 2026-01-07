@@ -42,9 +42,12 @@ class EventManager:
         return None
 
     
-    def add_detections(self, detections):
-        for d in detections:
-            self.event_labels.add(d.label)
+    def add_detections(self, labels):
+        """
+        Adds detected class labels (strings) to the current event.
+        """
+        for label in labels:
+            self.event_labels.add(label)
 
     def _start_event(self, timestamp: float):
         self.event_active = True
@@ -71,7 +74,6 @@ class EventManager:
             )
 
         self.event_active = False
-        self.event_start_time = None
         self.last_motion_time = None
 
     def get_event_metadata(self, end_time: float):
@@ -84,3 +86,7 @@ class EventManager:
             "duration": round(duration, 2),
             "labels": sorted(self.event_labels),
         }
+
+    def reset(self):
+        self.event_start_time = None
+        self.event_labels.clear()

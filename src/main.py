@@ -23,8 +23,9 @@ def main():
     if ENABLE_LABELING:
         object_detector = ObjectDetector(
             model_name="yolov8n.pt",
-            confidence_threshold=0.5,
-            allowed_classes=None
+            conf_threshold=0.5,
+            roi_padding=10,
+            enabled=ENABLE_LABELING
         )
 
     writer = EventVideoWriter(
@@ -38,7 +39,7 @@ def main():
     frame_count = 0
     for frame, ts in reader.read():
         motion_result = motion_detector.update(frame)
-        signal = event_manager.update(motion_result.detected, ts)
+        signal = event_manager.update(motion_result.motion_detected, ts)
 
         if signal == "start":
             writer.start(event_manager.event_id, frame.shape)
@@ -50,8 +51,11 @@ def main():
 
             # Run YOLO only during active events
             if ENABLE_LABELING and (frame_count % YOLO_FRAME_STRIDE == 0):
-                detections = object_detector.detect(frame)
-                event_manager.add_detections(detections)
+                labels = object_detector.detect_on_rois(
+                    frame,
+                    motion_result.bounding_boxes
+                )
+                event_manager.add_detections(labels)
 
             frame_count += 1
 
@@ -62,6 +66,7 @@ def main():
             event_data["clip_path"] = clip_path
 
             metadata_writer.add_event(event_data)
+            event_manager.reset()
             print(f"Saved metadata for event {event_data['event_id']}")
 
     metadata_writer.save()
