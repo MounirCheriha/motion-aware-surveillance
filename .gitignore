@@ -12,3 +12,6 @@ yolov8n.pt
 # Data & outputs
 data/
 outputs/
+
+# Internal Docs
+TECHNICAL_DOCUMENTATION.md
