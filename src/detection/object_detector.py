@@ -1,3 +1,5 @@
+import logging
+import time
 import cv2
 from ultralytics import YOLO
 from typing import List, Tuple, Dict, Set
@@ -40,6 +42,8 @@ class ObjectDetector:
         detections = []
         h, w, _ = frame.shape
 
+        logging.info(f"Running YOLO on {len(rois)} ROIs")
+        start_time = time.time()
         for (x, y, bw, bh) in rois:
             # Add padding
             x1 = max(0, x - self.roi_padding)
@@ -71,5 +75,9 @@ class ObjectDetector:
                         y1 + by2
                     )
                 })
-
+        end_time = time.time()
+        time_taken = end_time - start_time
+        logging.info(f"YOLO detection on ROIs took {time_taken:.2f} seconds")
+        logging.info(f"Average of {len(rois) / time_taken:.2f} ROIs per second")
+        
         return detections
